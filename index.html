@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メール自動作成ツール</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: #f4f6f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 680px;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 22px;
+      color: #1a1a2e;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 32px;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #333;
+      background: #fafafa;
+      transition: border 0.2s;
+      font-family: inherit;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #4f8ef7;
+      background: #fff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .api-field {
+      background: #fff8f0;
+      border: 1px solid #ffd9a0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .api-field label {
+      color: #b36b00;
+    }
+
+    .api-field input {
+      background: #fff;
+      border-color: #ffd9a0;
+    }
+
+    .api-note {
+      font-size: 11px;
+      color: #b36b00;
+      margin-top: 6px;
+    }
+
+    .save-btn {
+      width: auto;
+      padding: 6px 14px;
+      background: #4f8ef7;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .save-btn:hover { background: #2f6fd4; }
+
+    .key-saved-state {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: #f0faf0;
+      border: 1px solid #a8dba8;
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .key-saved-icon {
+      font-size: 18px;
+      color: #2a8a2a;
+    }
+
+    .key-saved-text {
+      flex: 1;
+      font-size: 13px;
+      color: #2a8a2a;
+      font-weight: 600;
+    }
+
+    .delete-btn {
+      width: auto;
+      padding: 6px 14px;
+      background: #fff;
+      color: #cc3300;
+      border: 1px solid #cc3300;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover { background: #fff0ee; }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #4f8ef7;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #2f6fd4; }
+    button:disabled { background: #a0bcf0; cursor: not-allowed; }
+
+    .output-area {
+      margin-top: 28px;
+      display: none;
+    }
+
+    .output-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 8px;
+    }
+
+    .output-box {
+      background: #f0f5ff;
+      border: 1px solid #c5d8ff;
+      border-radius: 8px;
+      padding: 16px 18px;
+      font-size: 14px;
+      color: #222;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .copy-btn {
+      margin-top: 10px;
+      width: auto;
+      padding: 8px 20px;
+      background: #fff;
+      color: #4f8ef7;
+      border: 1px solid #4f8ef7;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover { background: #f0f5ff; }
+
+    .loading {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .error {
+      background: #fff0f0;
+      border: 1px solid #ffb3b3;
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #cc0000;
+      font-size: 13px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 28px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>メール自動作成ツール</h1>
+    <p class="subtitle">要点を入力するだけで、プロのメール文章を自動生成します</p>
+
+    <div class="api-field">
+      <label>Claude APIキー</label>
+
+      <div id="keyInputState">
+        <input type="password" id="apiKey" placeholder="sk-ant-..." />
+        <button class="save-btn" onclick="saveApiKey()">このブラウザに保存</button>
+        <p class="api-note">※ 保存後はキーが非表示になります。外部には送信されません。</p>
+      </div>
+
+      <div class="key-saved-state" id="keySavedState">
+        <span class="key-saved-icon">🔒</span>
+        <span class="key-saved-text">APIキー保存済み</span>
+        <button class="delete-btn" onclick="deleteApiKey()">削除して再入力</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>送り元（事務所名・担当者名）</label>
+      <input type="text" id="senderName" placeholder="例：加藤税理士事務所　加藤" />
+    </div>
+
+    <div class="field">
+      <label>顧客名・会社名</label>
+      <input type="text" id="clientName" placeholder="例：山田商事　山田社長" />
+    </div>
+
+    <div class="field">
+      <label>件名・報告内容</label>
+      <input type="text" id="subject" placeholder="例：3月決算の報告" />
+    </div>
+
+    <div class="field">
+      <label>要点（箇条書きでもOK）</label>
+      <textarea id="points" placeholder="例：売上は前年比105%と好調、経費はやや増加、納税額は昨年より少し多め、来月面談希望"></textarea>
+    </div>
+
+    <div class="field">
+      <label>トーン</label>
+      <select id="tone">
+        <option value="丁寧">丁寧</option>
+        <option value="親しみやすい">親しみやすい</option>
+        <option value="フォーマル">フォーマル</option>
+      </select>
+    </div>
+
+    <button id="generateBtn" onclick="generate()">メールを生成する</button>
+
+    <div class="loading" id="loading">生成中...</div>
+    <div class="error" id="error"></div>
+
+    <div class="output-area" id="outputArea">
+      <hr class="divider">
+      <div class="output-label">生成されたメール文</div>
+      <div class="output-box" id="outputBox"></div>
+      <button class="copy-btn" onclick="copyText()">コピーする</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'mail_tool_api_key';
+
+    function showSavedState() {
+      document.getElementById('keyInputState').style.display = 'none';
+      document.getElementById('keySavedState').style.display = 'flex';
+    }
+
+    function showInputState() {
+      document.getElementById('keyInputState').style.display = 'block';
+      document.getElementById('keySavedState').style.display = 'none';
+      document.getElementById('apiKey').value = '';
+    }
+
+    window.addEventListener('load', () => {
+      if (localStorage.getItem(STORAGE_KEY)) {
+        showSavedState();
+      }
+    });
+
+    function saveApiKey() {
+      const key = document.getElementById('apiKey').value.trim();
+      if (!key) { alert('APIキーを入力してください。'); return; }
+      localStorage.setItem(STORAGE_KEY, key);
+      showSavedState();
+    }
+
+    function deleteApiKey() {
+      localStorage.removeItem(STORAGE_KEY);
+      showInputState();
+    }
+
+    async function generate() {
+      const apiKey = localStorage.getItem(STORAGE_KEY) || document.getElementById('apiKey').value.trim();
+      const senderName = document.getElementById('senderName').value.trim();
+      const clientName = document.getElementById('clientName').value.trim();
+      const subject = document.getElementById('subject').value.trim();
+      const points = document.getElementById('points').value.trim();
+      const tone = document.getElementById('tone').value;
+
+      if (!apiKey) { showError('APIキーを入力してください。'); return; }
+      if (!senderName) { showError('送り元を入力してください。'); return; }
+      if (!clientName) { showError('顧客名・会社名を入力してください。'); return; }
+      if (!points) { showError('要点を入力してください。'); return; }
+
+      document.getElementById('generateBtn').disabled = true;
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('outputArea').style.display = 'none';
+      document.getElementById('error').style.display = 'none';
+
+      const prompt = `あなたは税理士事務所のアシスタントです。
+以下の要点情報をもとに、顧客への報告メールを作成してください。
+
+【送り元】：${senderName}
+【顧客名・会社名】：${clientName}
+【件名・報告内容】：${subject}
+【要点】：${points}
+【トーン】：${tone}
+
+条件：
+・書き出しは「お世話になっております。${senderName}でございます。」
+・宛先として「${clientName}様」を冒頭に入れる
+・件名「${subject}」に関する内容を盛り込む
+・要点を自然な文章に変換する
+・文章は基本的に続けて書き、1文ごとに改行しない
+・段落が変わるときだけ改行を入れる（宛先の後、本文の後、締めの前）
+・締めの文も入れる
+・300文字以内にまとめる
+・メール本文のみ出力する（説明文は不要）`;
+
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1024,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error?.message || 'APIエラーが発生しました。');
+        }
+
+        const data = await response.json();
+        const text = data.content[0].text;
+
+        document.getElementById('outputBox').textContent = text;
+        document.getElementById('outputArea').style.display = 'block';
+
+      } catch (e) {
+        showError(e.message);
+      } finally {
+        document.getElementById('generateBtn').disabled = false;
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('generateBtn').disabled = false;
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function copyText() {
+      const text = document.getElementById('outputBox').textContent;
+      const btn = document.querySelector('.copy-btn');
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = 'コピーしました！';
+          setTimeout(() => btn.textContent = 'コピーする', 2000);
+        });
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          btn.textContent = 'コピーしました！';
+          setTimeout(() => btn.textContent = 'コピーする', 2000);
+        } catch (e) {
+          btn.textContent = 'コピー失敗';
+          setTimeout(() => btn.textContent = 'コピーする', 2000);
+        }
+        document.body.removeChild(textarea);
+      }
+    }
+  </script>
+</body>
+</html>
