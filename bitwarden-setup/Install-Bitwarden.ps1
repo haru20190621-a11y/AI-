@@ -202,7 +202,8 @@ if ($exe) {
     Write-Note 'winget はダウンロードしたインストーラーの SHA256 をマニフェストの値と照合してから実行しています。'
 }
 
-if ($installedVersion -and $installedVersion -ne $Version) {
+# ファイルのバージョンは "2026.10.4.0" のように末尾に .0 が付くので、それを除いて比べる
+if ($installedVersion -and (($installedVersion -replace '(\.0)+$', '') -ne ($Version -replace '(\.0)+$', ''))) {
     Write-Warn2 ("入っているバージョン {0} は、事前確認した {1} と違います。報告のときに伝えてください。" -f $installedVersion, $Version)
 }
 
