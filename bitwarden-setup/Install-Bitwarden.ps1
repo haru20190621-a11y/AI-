@@ -125,8 +125,10 @@ function Open-InBrave([string]$Url) {
 # ---------------------------------------------------------------- winget 呼び出し
 function Invoke-Winget([string[]]$WingetArgs) {
     Write-Note ("winget " + ($WingetArgs -join ' '))
-    & winget @WingetArgs
-    return $LASTEXITCODE
+    # winget の画面出力はそのままコンソールに流し、戻り値は終了コードだけにする
+    # （& winget ... と書くと出力が戻り値に混ざって終了コードの判定が壊れる）
+    $p = Start-Process -FilePath 'winget' -ArgumentList $WingetArgs -NoNewWindow -Wait -PassThru
+    return [int]$p.ExitCode
 }
 
 # winget の主な終了コード
